@@ -7,14 +7,15 @@ skip-lint = false
 
 #[programs.localnet]
 [programs.devnet]
-pivox_contract = "ENhCXGcdC1s1kYpGVWSiMkR8snaxrCzSSTjbW7ViDioG"
+pivox_contract = "3zQWBv2YdLqZofanKcE4C7JEgM8PaL4Lemu6dZSqiNCv"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "https://api.devnet.solana.com"
-wallet = "~/.config/solana/id.json"
+cluster = "https://devnet.helius-rpc.com/?api-key=a992ac4f-6834-4e64-9f6f-1802d4d555c9"
+wallet = "/home/vinay/Turbin3-wallet.json"
+#wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

@@ -9,7 +9,7 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("ENhCXGcdC1s1kYpGVWSiMkR8snaxrCzSSTjbW7ViDioG");
+declare_id!("3zQWBv2YdLqZofanKcE4C7JEgM8PaL4Lemu6dZSqiNCv");
 
 #[program]
 pub mod pivox_contract {

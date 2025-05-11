@@ -10,24 +10,28 @@ import {
 } from "@solana/spl-token";
 import fs from "fs";
 
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 describe("pivox_contract - Full Flow", () => {
   anchor.setProvider(anchor.AnchorProvider.env());
   const provider = anchor.getProvider();
   const program = anchor.workspace.PivoxContract as Program<PivoxContract>;
 
   // // Accounts
-  let client = anchor.web3.Keypair.generate();
-  let freelancer = anchor.web3.Keypair.generate();
-  let randomUser = anchor.web3.Keypair.generate();
+  // let client = anchor.web3.Keypair.generate();           //Uncomment if testing locally
+  // let freelancer = anchor.web3.Keypair.generate();
+  // let randomUser = anchor.web3.Keypair.generate();
 
 
 function loadKeypair(path: string): anchor.web3.Keypair {
     const secretKey = Uint8Array.from(JSON.parse(fs.readFileSync(path, "utf8")));
     return anchor.web3.Keypair.fromSecretKey(secretKey);
 }
-//   let client = loadKeypair("wallets/random_user.json");
-// let freelancer = loadKeypair("wallets/freelancer.json");
-// let randomUser = loadKeypair("wallets/client.json");
+  let client =  loadKeypair("wallets/freelancer.json");  //Better to use preloaded wallets due to airdrop limits 
+let freelancer =  loadKeypair("wallets/testkeypair.json") ; //Comment out when using locally for easy testing
+ let randomUser = loadKeypair("wallets/client.json"); 
 
   // PDAs
   let milestoneApprovalPda: anchor.web3.PublicKey;
@@ -61,28 +65,39 @@ function loadKeypair(path: string): anchor.web3.Keypair {
     ) {
 
       const balance = await connection.getBalance(pubkey);
+      await sleep(1000);
   if (balance < anchor.web3.LAMPORTS_PER_SOL) {
       const sig = await connection.requestAirdrop(pubkey, amountLamports);
+      await sleep(1000);
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      await sleep(1000);
       await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight });
+      await sleep(1000);
       const balance = await connection.getBalance(pubkey);
+      await sleep(1000);
       console.log(`✅ Airdrop confirmed. New balance: ${balance / anchor.web3.LAMPORTS_PER_SOL} SOL`);
      }
     }
-    await airdropAndConfirm(provider.connection, client.publicKey);
-    await airdropAndConfirm(provider.connection, freelancer.publicKey);
-    await airdropAndConfirm(provider.connection, randomUser.publicKey);
+
+
+    
+    // await airdropAndConfirm(provider.connection, client.publicKey);         // Uncomment if testing locally
+    // await airdropAndConfirm(provider.connection, freelancer.publicKey);
+    // await airdropAndConfirm(provider.connection, randomUser.publicKey);
 
 
     // Create USDC Mint
     usdcMint = await createMint(provider.connection, client, client.publicKey, null, 6);
-
+    
     // Create ATAs
     clientAta = await getAssociatedTokenAddress(usdcMint, client.publicKey);
+  
     await getOrCreateAssociatedTokenAccount(provider.connection, client, usdcMint, client.publicKey);
-
+    
     freelancerAta = await getAssociatedTokenAddress(usdcMint, freelancer.publicKey);
+  
     await getOrCreateAssociatedTokenAccount(provider.connection, client, usdcMint, freelancer.publicKey);
+    
 
     // Mint tokens to client
     await mintTo(provider.connection, client, usdcMint, clientAta, client, 1_000_000_000);
@@ -92,17 +107,20 @@ function loadKeypair(path: string): anchor.web3.Keypair {
       [Buffer.from("milestone_approval"), client.publicKey.toBuffer(), freelancer.publicKey.toBuffer()],
       program.programId
     );
+
     [vaultAccountPda, vaultBump] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("vault_account"), client.publicKey.toBuffer(), freelancer.publicKey.toBuffer()],
       program.programId
     );
+  
     [contractPda, contractBump] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("contract"), client.publicKey.toBuffer(), freelancer.publicKey.toBuffer()],
       program.programId
     );
   });
 
-  it("Initializes Milestone Approval", async () => {
+
+  it("The client intializes the contract defining all the milestones", async () => {
     const tx = await program.methods.initializeMilestoneApproval(1)
       .accountsPartial({
         payer: client.publicKey,
@@ -120,7 +138,7 @@ function loadKeypair(path: string): anchor.web3.Keypair {
     assert.equal(acc.threshold, 1);
   });
 
-  it("Freelancer approves milestones and creates contract", async () => {
+  it("The freelancer approves milestones and the contract comes into effect", async () => {
     const tx = await program.methods.approve(
       50,
       50,
@@ -232,6 +250,8 @@ function loadKeypair(path: string): anchor.web3.Keypair {
       .rpc();
     console.log("✅ freelancerSubmitMilestone tx:", tx1);
 
+    await sleep(1000);
+
     // Client approve
     const tx2 = await program.methods.clientApproveMilestone(new anchor.BN(0))
       .accountsPartial({
@@ -241,6 +261,7 @@ function loadKeypair(path: string): anchor.web3.Keypair {
       .signers([client])
       .rpc();
     console.log("✅ clientApproveMilestone tx:", tx2);
+    await sleep(1000);
 
     // Freelancer confirm
     const tx3 = await program.methods.freelancerConfirmMilestone(new anchor.BN(0))
@@ -251,6 +272,7 @@ function loadKeypair(path: string): anchor.web3.Keypair {
       .signers([freelancer])
       .rpc();
     console.log("✅ freelancerConfirmMilestone tx:", tx3);
+    await sleep(1000);
 
     // Release milestone payment
     const vaultBefore = await provider.connection.getTokenAccountBalance(vaultAta);
@@ -295,16 +317,18 @@ function loadKeypair(path: string): anchor.web3.Keypair {
       .accountsPartial({ signer: freelancer.publicKey, contract: contractPda })
       .signers([freelancer])
       .rpc();
-
+      await sleep(1000);
     await program.methods.clientApproveMilestone(new anchor.BN(1))
       .accountsPartial({ signer: client.publicKey, contract: contractPda })
       .signers([client])
       .rpc();
+      await sleep(1000);
 
     await program.methods.freelancerConfirmMilestone(new anchor.BN(1))
       .accountsPartial({ signer: freelancer.publicKey, contract: contractPda })
       .signers([freelancer])
       .rpc();
+      await sleep(1000);
 
     await program.methods.releaseMilestonePayment(new anchor.BN(1))
       .accountsPartial({
@@ -323,10 +347,11 @@ function loadKeypair(path: string): anchor.web3.Keypair {
 
     console.log("✅ Milestone 1 fully processed");
   });
-
+ 
   it("Unauthorized submit fails", async () => {
-  
-    await provider.connection.requestAirdrop(randomUser.publicKey, 1e9);
+    await sleep(1000);
+    await sleep(1000);
+  //await provider.connection.requestAirdrop(randomUser.publicKey, 1e9);
     try {
       await program.methods.freelancerSubmitMilestone(new anchor.BN(2))
         .accountsPartial({ signer: randomUser.publicKey, contract: contractPda })
@@ -454,9 +479,9 @@ function loadKeypair(path: string): anchor.web3.Keypair {
 });
 
 function logAnchorError(err: any, label: string = "") {
-  console.log(`❌ ${label} failed`);
+  console.log(`${label}`);
   if (err instanceof anchor.AnchorError) {
-    console.log("🔴 Anchor Error:");
+    console.log("Expected");
     console.log("  Code:", err.error.errorCode.code);
     console.log("  Msg :", err.error.errorMessage);
     //console.log("🔍 Logs:\n", err.logs?.join("\n"));
