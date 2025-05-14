@@ -1,8 +1,8 @@
 
 
-# Pivox
+# PIVOX
 
-PivoxContract is a decentralized milestone-based payment protocol built on Solana using the Anchor framework.
+PIVOX is a decentralized milestone-based payment protocol built on Solana using the Anchor framework.
 It enables transparent, secure, and trustless payments between clients and freelancers, leveraging milestone tracking, escrowed funds management, and multi-signature logic.
 Additionally, the protocol supports optional Project Manager (PM) read-only access for enhanced project oversight without mutability rights.
 
