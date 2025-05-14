@@ -29,7 +29,7 @@ function loadKeypair(path: string): anchor.web3.Keypair {
     const secretKey = Uint8Array.from(JSON.parse(fs.readFileSync(path, "utf8")));
     return anchor.web3.Keypair.fromSecretKey(secretKey);
 }
-  let client =  loadKeypair("wallets/freelancer.json");  //Better to use preloaded wallets due to airdrop limits 
+  let client =  loadKeypair("wallets/random_user.json");  //Better to use preloaded wallets due to airdrop limits 
 let freelancer =  loadKeypair("wallets/testkeypair.json") ; //Comment out when using locally for easy testing
  let randomUser = loadKeypair("wallets/client.json"); 
 
